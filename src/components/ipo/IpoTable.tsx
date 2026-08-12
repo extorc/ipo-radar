@@ -165,15 +165,17 @@ export function IpoTable({ rows, nowIst }: Props) {
                     >
                       {row.board === "sme" ? "SME" : "MB"}
                     </span>
-                    <a
-                      href={row.detailUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="truncate font-medium text-foreground hover:text-accent"
-                    >
-                      {row.name}
-                    </a>
-                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
+                    <div className="truncate">
+                      <a
+                        href={row.detailUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-foreground hover:text-accent"
+                      >
+                        {row.name}
+                      </a>
+                    </div>
+                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground ml-1" aria-hidden />
                   </div>
                 </td>
                 <td className="num px-4 py-3 text-muted-foreground">{fmtDate(row.open)}</td>
@@ -199,11 +201,9 @@ export function IpoTable({ rows, nowIst }: Props) {
                   ) : isOpen && row.subscriptions && Object.keys(row.subscriptions).length > 0 ? (
                     <HoverCard openDelay={200} closeDelay={100}>
                       <HoverCardTrigger asChild>
-                        <a
-                          href={row.subscriptionUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="hover:text-accent cursor-pointer"
+                        <button
+                          type="button"
+                          className="hover:text-accent cursor-pointer text-right inline-flex items-center justify-end"
                         >
                           {fmtNum(row.weakestSubscription)}x
                           <span
@@ -215,7 +215,7 @@ export function IpoTable({ rows, nowIst }: Props) {
                           >
                             {row.weakestCategory}
                           </span>
-                        </a>
+                        </button>
                       </HoverCardTrigger>
                       <HoverCardContent className="w-40 px-3 py-2 text-left shadow-xl">
                         <div className="flex flex-col gap-1.5">
@@ -225,6 +225,14 @@ export function IpoTable({ rows, nowIst }: Props) {
                               <span className="font-semibold">{fmtNum(val)}x</span>
                             </div>
                           ))}
+                          <a
+                            href={row.subscriptionUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 pt-1.5 border-t border-border text-[10px] text-accent hover:underline text-center block"
+                          >
+                            View details on Chittorgarh
+                          </a>
                         </div>
                       </HoverCardContent>
                     </HoverCard>
