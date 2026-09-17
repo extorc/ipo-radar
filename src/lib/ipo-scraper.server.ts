@@ -198,7 +198,7 @@ function parseGmp(html: string): { history: GmpPoint[]; gmpPercent: number | nul
   const history = [...seen.entries()]
     .map(([date, gmp]) => ({ date, gmp }))
     .sort((a, b) => a.date.localeCompare(b.date));
-  const pctMatch = /gmp_percent_calc\\?":\\?"(-?[\d.]+)\\?"/.exec(html);
+  const pctMatch = /gmp_percent_calc[\s\S]{0,80}?(-?[\d.]+)(?:%|\\?"|\\?u003c|<)/.exec(html);
   return { history, gmpPercent: pctMatch ? Number(pctMatch[1]) : null };
 }
 
@@ -304,4 +304,22 @@ export async function getIpoSnapshot(): Promise<IpoSnapshot> {
   const data: IpoSnapshot = { fetchedAt: new Date().toISOString(), rows, errors };
   cache = { at: Date.now(), data };
   return data;
+}
+
+export async function fetchRecentOfs(): Promise<string | null> {
+  const year = new Date().getFullYear();
+  const yearStr = `${year}-${(year + 1).toString().slice(2)}`; // 2026-27
+  const month = new Date().getMonth() + 1; // 8
+  const url = `https://webnodejs.chittorgarh.com/cloud/report/data-read/157/1/${month}/${year}/${yearStr}/0/0/0`;
+  try {
+    const res = await fetch(url, { headers: { "user-agent": UA, accept: "application/json" } });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.reportTableData && json.reportTableData.length > 0) {
+      return json.reportTableData[0]["Company Name"] || null;
+    }
+  } catch (err) {
+    console.error("Failed to fetch OFS:", err);
+  }
+  return null;
 }

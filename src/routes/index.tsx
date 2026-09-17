@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
-import { fetchIpoSnapshot } from "@/lib/ipo.functions";
+import { fetchIpoSnapshot, fetchRecentOfs } from "@/lib/ipo.functions";
 import { GmpChart } from "@/components/ipo/GmpChart";
 import { IpoTable, ratioFor } from "@/components/ipo/IpoTable";
 import { IpoGanttChart } from "@/components/ipo/IpoGanttChart";
@@ -12,6 +12,12 @@ const ipoQuery = queryOptions({
   queryKey: ["ipo-snapshot"],
   queryFn: () => fetchIpoSnapshot(),
   staleTime: 60_000,
+});
+
+const ofsQuery = queryOptions({
+  queryKey: ["ofs-recent"],
+  queryFn: () => fetchRecentOfs(),
+  staleTime: 60_000 * 60, // 1 hour
 });
 
 export const Route = createFileRoute("/")({
@@ -34,8 +40,11 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: ({ context }) => {
-    context.queryClient.ensureQueryData(ipoQuery);
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(ipoQuery),
+      context.queryClient.ensureQueryData(ofsQuery),
+    ]);
   },
   component: Dashboard,
   errorComponent: ({ error }) => (
@@ -49,6 +58,7 @@ type Filter = "all" | "mainboard" | "sme";
 
 function Dashboard() {
   const { data, refetch, isFetching } = useSuspenseQuery(ipoQuery);
+  const { data: recentOfs, refetch: refetchOfs, isFetching: isFetchingOfs } = useSuspenseQuery(ofsQuery);
   const [filter, setFilter] = useState<Filter>("all");
   const [nowIst, setNowIst] = useState<Date | null>(null);
 
@@ -90,25 +100,33 @@ function Dashboard() {
             <p className="mt-1 text-sm text-muted-foreground">
               Open and upcoming mainboard &amp; SME issues.
             </p>
-
           </div>
           <button
             type="button"
-            onClick={() => void refetch()}
+            onClick={() => {
+              void refetch();
+              void refetchOfs();
+            }}
             className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-sm font-medium transition-colors hover:bg-surface-muted"
           >
-            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} aria-hidden />
+            <RefreshCw className={cn("h-4 w-4", (isFetching || isFetchingOfs) && "animate-spin")} aria-hidden />
             Refresh
           </button>
         </header>
 
-        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat) => (
             <div key={stat.label} className="rounded-2xl border border-border bg-surface px-4 py-3">
               <dt className="text-xs text-muted-foreground">{stat.label}</dt>
               <dd className="num mt-1 text-2xl font-semibold">{stat.value}</dd>
             </div>
           ))}
+          {recentOfs && (
+            <div className="rounded-2xl border border-border bg-surface px-4 py-3 bg-gradient-to-br from-indigo-500/10 to-transparent">
+              <dt className="text-xs text-indigo-500 font-medium">Recent OFS</dt>
+              <dd className="mt-1 text-sm font-semibold truncate" title={recentOfs}>{recentOfs}</dd>
+            </div>
+          )}
         </dl>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
